@@ -1,13 +1,16 @@
-"""Main entry point: fetch → summarize → generate."""
+"""Main entry point — two modes:
+
+1. `python main.py fetch` — fetch news, save to debug/fetched.json
+2. `python main.py generate <summarized.json>` — generate HTML from summarized data
+3. `python main.py prompt` — fetch news and print the summarization prompt
+
+The Claude Code trigger orchestrates: fetch → (Claude summarizes) → generate.
+"""
 
 import json
 import logging
 import sys
 from pathlib import Path
-
-from fetch_news import fetch_all
-from summarize import summarize_and_rank
-from generate_page import generate
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,38 +18,67 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+DATA_DIR = Path(__file__).parent.parent / "data"
 
-def main():
-    logger.info("=== Starting Daily News Briefing Pipeline ===")
 
-    # Step 1: Fetch
-    logger.info("Step 1/3: Fetching news from all sources...")
+def cmd_fetch():
+    """Fetch news from all sources and save to data/fetched.json."""
+    from fetch_news import fetch_all
+
+    logger.info("Fetching news from all sources...")
     fetched = fetch_all()
     logger.info(f"Fetched {fetched['total_articles']} articles")
 
-    # Save intermediate data for debugging
-    debug_dir = Path(__file__).parent.parent / "debug"
-    debug_dir.mkdir(exist_ok=True)
-    with open(debug_dir / "fetched.json", "w") as f:
+    DATA_DIR.mkdir(exist_ok=True)
+    output = DATA_DIR / "fetched.json"
+    with open(output, "w", encoding="utf-8") as f:
         json.dump(fetched, f, indent=2, default=str)
 
-    if fetched["total_articles"] == 0:
-        logger.error("No articles fetched. Check sources and network connectivity.")
-        sys.exit(1)
+    print(f"Saved {fetched['total_articles']} articles to {output}")
+    return fetched
 
-    # Step 2: Summarize
-    logger.info("Step 2/3: Summarizing with Claude API...")
-    summarized = summarize_and_rank(fetched)
 
-    with open(debug_dir / "summarized.json", "w") as f:
-        json.dump(summarized, f, indent=2, ensure_ascii=False)
+def cmd_prompt():
+    """Fetch news and print the summarization prompt."""
+    from fetch_news import fetch_all
+    from summarize import build_prompt
 
-    # Step 3: Generate
-    logger.info("Step 3/3: Generating HTML page...")
-    output_path = generate(summarized)
+    fetched = fetch_all()
+    DATA_DIR.mkdir(exist_ok=True)
+    with open(DATA_DIR / "fetched.json", "w", encoding="utf-8") as f:
+        json.dump(fetched, f, indent=2, default=str)
 
-    logger.info(f"=== Pipeline complete. Output: {output_path} ===")
+    prompt = build_prompt(fetched)
+    print(prompt)
+
+
+def cmd_generate(input_path: str):
+    """Generate HTML page from summarized JSON data."""
+    from generate_page import generate
+
+    with open(input_path, encoding="utf-8") as f:
+        data = json.load(f)
+
+    output = generate(data)
+    print(f"Generated: {output}")
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print("Usage: python main.py [fetch|prompt|generate <file>]")
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == "fetch":
+        cmd_fetch()
+    elif command == "prompt":
+        cmd_prompt()
+    elif command == "generate":
+        if len(sys.argv) < 3:
+            print("Usage: python main.py generate <summarized.json>")
+            sys.exit(1)
+        cmd_generate(sys.argv[2])
+    else:
+        print(f"Unknown command: {command}")
+        sys.exit(1)

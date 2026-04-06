@@ -1,19 +1,19 @@
-"""Summarize, categorize, rank, and translate news articles using Claude API."""
+"""Summarize news data — used by Claude Code trigger, not API.
+
+This module provides:
+1. build_prompt() — generates the summarization prompt from fetched data
+2. parse_response() — parses Claude's JSON response
+3. The trigger reads fetched.json, builds the prompt, summarizes itself,
+   then passes the result to generate_page.py
+"""
 
 import json
 import logging
-import os
-
-import anthropic
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-20250514"
-MAX_ARTICLES_PER_SUBSECTION = 15  # Cap input to manage token usage
-
-
-def get_client() -> anthropic.Anthropic:
-    return anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+MAX_ARTICLES_PER_SUBSECTION = 15
 
 
 def _truncate_articles(categories: dict) -> dict:
@@ -21,7 +21,6 @@ def _truncate_articles(categories: dict) -> dict:
     for cat in categories.values():
         for sub_name, articles in cat["subsections"].items():
             if len(articles) > MAX_ARTICLES_PER_SUBSECTION:
-                # Sort by published date (newest first), keep top N
                 articles.sort(
                     key=lambda a: a.get("published") or "",
                     reverse=True,
@@ -30,12 +29,10 @@ def _truncate_articles(categories: dict) -> dict:
     return categories
 
 
-def summarize_and_rank(fetched_data: dict) -> dict:
-    """Send all articles to Claude for summarization, ranking, and translation."""
-    client = get_client()
+def build_prompt(fetched_data: dict) -> str:
+    """Build the summarization prompt from fetched article data."""
     categories = _truncate_articles(fetched_data["categories"])
 
-    # Build article list for the prompt
     articles_text = ""
     for cat_key, cat_data in categories.items():
         articles_text += f"\n## {cat_data['display_name']} (weight: {cat_data['weight']})\n"
@@ -68,7 +65,6 @@ Your job:
 ## Output Format
 
 Return valid JSON with this exact structure:
-```json
 {{
   "generated_at": "ISO timestamp",
   "breaking": [
@@ -120,55 +116,33 @@ Return valid JSON with this exact structure:
     }}
   ]
 }}
-```
 
 Important:
 - Keep sections in the order shown above (World & Markets first).
-- If a subsection has no noteworthy articles, include it with an empty items array.
-- The detail fields should provide additional context someone would want if they click to expand — not just a longer version of the summary.
-- Chinese translations should be natural, not literal. Use standard Simplified Chinese news style.
-- Only return valid JSON, no markdown fences or extra text.
-"""
+- If a subsection has no noteworthy articles, include it with an empty entries array.
+- The detail fields should provide additional context beyond the summary.
+- Chinese translations should be natural Simplified Chinese news style.
+- Only return valid JSON, no markdown fences or extra text."""
 
-    logger.info("Sending articles to Claude for summarization...")
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=8000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    return prompt
 
-    result_text = response.content[0].text.strip()
 
-    # Handle case where Claude wraps in markdown code fences
-    if result_text.startswith("```"):
-        result_text = result_text.split("\n", 1)[1]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3].strip()
-
-    try:
-        result = json.loads(result_text)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Claude response as JSON: {e}")
-        logger.error(f"Response (first 500 chars): {result_text[:500]}")
-        raise
-
-    logger.info(
-        f"Summarization complete. "
-        f"Breaking: {len(result.get('breaking', []))}, "
-        f"Sections: {len(result.get('sections', []))}"
-    )
-    return result
+def parse_response(response_text: str) -> dict:
+    """Parse Claude's JSON response, handling markdown fences."""
+    text = response_text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1]
+        if text.endswith("```"):
+            text = text[:-3].strip()
+    return json.loads(text)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    # Utility: print the prompt for a given fetched.json
     import sys
-    # Read fetched data from stdin or file
     if len(sys.argv) > 1:
         with open(sys.argv[1]) as f:
             data = json.load(f)
     else:
         data = json.load(sys.stdin)
-
-    result = summarize_and_rank(data)
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    print(build_prompt(data))

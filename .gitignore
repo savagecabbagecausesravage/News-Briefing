@@ -6,3 +6,6 @@ venv/
 *.egg-info/
 dist/
 build/
+data/
+debug/
+src/test_generate.py
