@@ -1,136 +1,105 @@
-# Building a Daily News Briefing Agent with Claude Code
+# Daily News Briefing Agent
 
-A complete guide to building an autonomous daily news briefing agent that fetches, summarizes, translates, and publishes news — using Claude Code scheduled triggers, GitHub Actions, and GitHub Pages. Zero API costs.
+An autonomous agent that delivers a curated daily news briefing to a web page, Notion, and Slack — powered by Claude Code, GitHub Actions, and GitHub Pages. Zero API costs beyond a Claude subscription.
 
-## Quick Start (Fork & Customise)
+**Live demo:** https://savagecabbagecausesravage.github.io/News-Briefing/
 
-The fastest way to get started is to **fork this repo** and customise it:
+## What it does
 
-1. **Fork** this repo on GitHub
-2. Make the repo **public** (required for free GitHub Pages)
-3. Get a free **NewsAPI key** at [newsapi.org/register](https://newsapi.org/register)
-4. Add it as a GitHub Actions secret: repo Settings → Secrets → `NEWS_API_KEY`
-5. Create a **GitHub fine-grained PAT** (Settings → Developer settings → Personal access tokens) scoped to your fork with Contents read/write
-6. **Enable GitHub Pages**: repo Settings → Pages → branch: `main`, folder: `/docs`
-7. Run the **Fetch News Data** workflow manually (Actions tab → Run workflow) to get initial data
-8. Create a **Claude Code scheduled trigger** using the trigger prompt template below
-9. Customise `src/sources.yaml` for your topics and `src/template.html` for your branding
+Every day at midnight UTC:
+1. **GitHub Actions** fetches 500+ articles from 38 RSS feeds and NewsAPI
+2. **Claude Code** reads the articles, picks the 15-18 most important, writes bilingual summaries (English + Chinese), and generates a responsive HTML page
+3. The page is **pushed to GitHub Pages** — accessible on any device, no app needed
+4. A **Notion page** is created under a parent "News Briefing" page with clickable article links
+5. A **Slack DM** is sent with the top 5 headlines and a link to the full briefing
 
-Your page will be live at `https://<your-username>.github.io/<repo-name>/`
-
-### Key files to customise:
-
-| File | What to change |
-|------|---------------|
-| `src/sources.yaml` | Your news topics, RSS feeds, NewsAPI queries, category weights |
-| `src/template.html` | Page title, colours, languages, layout |
-| `src/generate_page.py` | Section/subsection names, language translations (SECTION_CN, SUBSECTION_CN dicts) |
-| `src/summarize_cli.py` | `MAX_TOTAL` (article cap), `MAX_PER_SUBSECTION` |
-| `.github/workflows/fetch-news.yml` | Cron schedule (adjust for your timezone) |
-| Trigger prompt | Content rules, item count, language, Notion/Slack config |
+The page supports:
+- EN/CN language toggle (one click)
+- Dark/light mode (follows system)
+- Date dropdown to browse last 5 days
+- Clickable headlines linking to original sources
+- Mobile-friendly responsive layout
 
 ---
 
-## What You Get
+## How to build this from scratch
 
-- A **responsive web page** updated daily with 15-18 curated news articles
-- **Bilingual** (English + Chinese) with a one-click language toggle
-- **Clickable headlines** linking to original sources
-- **Date dropdown** to browse the last 5 days of briefings
-- **Notion page** with the same content, organized under a parent page
-- **Slack DM** with top 5 headlines and a link to the full briefing
-- **Fully autonomous** — runs on a cron schedule with no manual intervention
+### Prerequisites
 
-**Live example:** https://savagecabbagecausesravage.github.io/News-Briefing/
+- A **Claude Pro or Team subscription** (for scheduled triggers)
+- A **GitHub account** (free tier)
+- ~30 minutes
 
----
-
-## Architecture
-
-```
-23:55 UTC — GitHub Actions (fetch-news.yml)
-  └── Python fetches 500+ articles from 38 RSS feeds + NewsAPI
-  └── Commits data/fetched.json to the repo
-
-00:00 UTC — Claude Code Scheduled Trigger (Sonnet)
-  Phase 1 (parent agent):
-    ├── Clones repo (pre-fetched data is already there)
-    ├── Reads compact article list via summarize_cli.py
-    ├── Writes briefing as Markdown (NOT JSON)
-    ├── Python converts Markdown → JSON → HTML
-    └── Pushes to GitHub Pages
-
-  Phase 2 (subagent — required for MCP bug workaround):
-    ├── Writes structured briefing to Notion
-    └── DMs user on Slack with top 5 headlines
-```
-
-### Why This Architecture?
-
-| Decision | Reason |
-|----------|--------|
-| **GitHub Actions fetches, Claude summarizes** | Remote trigger environment blocks outbound HTTP to RSS feeds |
-| **LLM writes Markdown, not JSON** | Models time out or stop mid-task when writing large JSON. Markdown is natural output. Python parses it. |
-| **Sonnet, not Opus** | Opus times out on the Markdown write step. Sonnet is 3x faster with minimal quality loss for news summaries. |
-| **Subagent for Notion/Slack** | MCP connector tools don't load on the trigger's first turn (platform bug). Spawning a subagent via the Agent tool properly initializes them. |
-| **GitHub PAT in clone URL** | Remote environment has no git credentials. PAT enables push. |
-| **setup.sh for dependencies** | `sgmllib3k` (feedparser dependency) fails to build on Python 3.12+. The setup script handles manual installation. |
+Optional:
+- **NewsAPI key** (free at [newsapi.org](https://newsapi.org/register)) for extra source coverage
+- **Notion** connected to Claude Code (for Notion pages)
+- **Slack** connected to Claude Code (for Slack DMs)
 
 ---
 
-## Prerequisites
+### Step 1: Fork the repo
 
-- **Claude Code** with a claude.ai account (for scheduled triggers)
-- **GitHub account** (free tier is fine)
-- **NewsAPI key** (free at [newsapi.org](https://newsapi.org/register)) — optional, RSS feeds work without it
-- **GitHub Personal Access Token** (fine-grained, scoped to the repo)
-- **Notion** connected to Claude Code (via MCP connector) — optional
-- **Slack** connected to Claude Code (via MCP connector) — optional
+1. Go to https://github.com/savagecabbagecausesravage/News-Briefing
+2. Click **Fork** (top right)
+3. Name it whatever you want
+4. Go to your fork's **Settings → General → Danger Zone → Change visibility → Make public** (required for free GitHub Pages)
 
----
+### Step 2: Enable GitHub Pages
 
-## Step-by-Step Setup
+1. In your fork: **Settings → Pages**
+2. Source: **Deploy from a branch**
+3. Branch: **main**, folder: **/docs**
+4. Click **Save**
 
-### 1. Create the GitHub Repository
+Your page will be at: `https://<your-username>.github.io/<repo-name>/`
 
-Create a new **public** repository (public = free GitHub Pages).
+### Step 3: Add NewsAPI key (optional but recommended)
 
-```
-your-repo/
-├── .github/
-│   └── workflows/
-│       └── fetch-news.yml    # Cron job to fetch articles
-├── src/
-│   ├── fetch_news.py         # RSS + NewsAPI fetching
-│   ├── summarize_cli.py      # Compact article output for the agent
-│   ├── parse_briefing.py     # Markdown → JSON converter
-│   ├── generate_page.py      # JSON → HTML renderer
-│   ├── main.py               # CLI entry point
-│   ├── sources.yaml           # Source configuration
-│   └── template.html          # Jinja2 HTML template
-├── docs/                      # GitHub Pages serves from here
-│   └── index.html             # Generated output
-├── data/
-│   └── fetched.json           # Pre-fetched articles (committed by GitHub Actions)
-├── requirements.txt
-├── setup.sh                   # Dependency installer for remote env
-└── .gitignore
-```
+1. Sign up at [newsapi.org/register](https://newsapi.org/register) — it's free
+2. Copy your API key from the dashboard
+3. In your fork: **Settings → Secrets and variables → Actions → New repository secret**
+4. Name: `NEWS_API_KEY`, Value: paste your key
 
-### 2. Configure News Sources (`src/sources.yaml`)
+Without this, the 38 RSS feeds still work. NewsAPI adds coverage for Reuters, AP, PitchBook and other sources that don't have RSS feeds.
 
-This is where you define what news you want. The file has two sections:
+### Step 4: Create a GitHub Personal Access Token
 
-**RSS feeds** — direct feeds from publications:
+The Claude trigger needs to push generated HTML to your repo. It can't use your password, so it needs a token.
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens**
+2. Click **Generate new token**
+3. **Token name:** `news-briefing-bot`
+4. **Expiration:** your choice (90 days is safe, no expiration is fine for a public news repo)
+5. **Repository access:** Only select repositories → select your fork
+6. **Permissions → Repository permissions → Contents:** Read and write
+7. Click **Generate token**
+8. **Save the token somewhere safe** (e.g., a local file `~/.secrets/github-pat.txt`). You'll need it in Step 7.
+
+### Step 5: Run the fetch workflow
+
+This downloads articles from all your RSS feeds and commits them to the repo.
+
+1. Go to your fork → **Actions** tab
+2. Click **Fetch News Data** in the left sidebar
+3. Click **Run workflow → Run workflow**
+4. Wait ~1-2 minutes for it to complete (green checkmark)
+
+This commits a `data/fetched.json` file to your repo with hundreds of articles.
+
+### Step 6: Customise your sources and topics
+
+Edit `src/sources.yaml` to change what news you get. The file has two sections:
+
+**RSS feeds** — add or remove feeds:
 ```yaml
 rss_feeds:
   - name: "BBC World"
     url: "https://feeds.bbci.co.uk/news/world/rss.xml"
-    category: "world_and_markets"
-    subsection: "Top Headlines"
+    category: "world_and_markets"        # which section it goes in
+    subsection: "Top Headlines"           # which subsection
 ```
 
-**NewsAPI queries** — for sources without RSS feeds:
+**NewsAPI queries** — keyword searches:
 ```yaml
 newsapi_queries:
   - query: "private equity deals"
@@ -138,290 +107,28 @@ newsapi_queries:
     subsection: "Deals & Fundraising"
 ```
 
-#### Personalisation choices:
+**To change the sections entirely** (e.g., replace Finance with Sports):
+1. Edit the `categories` block at the top of `sources.yaml`
+2. Update `SECTION_MAP` and `section_order` in `src/parse_briefing.py`
+3. Update `SECTION_CN` and `SUBSECTION_CN` in `src/generate_page.py`
+4. Update the trigger prompt (Step 7) to match
 
-| What to customise | How |
-|-------------------|-----|
-| **Topics/categories** | Edit the `categories` section in sources.yaml. Add/remove/rename sections. |
-| **Sources** | Add/remove RSS feeds and NewsAPI queries. See the [RSS feed research](#appendix-rss-feeds) appendix. |
-| **Weighting** | Adjust the `weight` field per category (should sum to 1.0). |
-| **Article count** | Change `MAX_PER_SUBSECTION` and `MAX_TOTAL` in `summarize_cli.py`. |
+### Step 7: Create the Claude Code scheduled trigger
 
-### 3. Configure the HTML Template (`src/template.html`)
+This is the heart of the system. Open Claude Code and run `/schedule` or use the command below.
 
-The template uses Jinja2 and supports:
-- Dark/light mode (follows system preference)
-- Language toggle (EN/CN by default)
-- Date dropdown for historical briefings (last 5 days)
-- Responsive design (mobile + desktop)
-- Clickable headlines linking to original articles
+**Before you start:** Have your GitHub PAT from Step 4 ready. Save it to a local file and tell Claude the path — never paste tokens in chat.
 
-#### Personalisation choices:
+**Create the trigger with these settings:**
 
-| What to customise | How |
-|-------------------|-----|
-| **Languages** | Change the `lang-en`/`lang-cn` CSS classes and add your language. Update `SECTION_CN` and `SUBSECTION_CN` dicts in `generate_page.py`. |
-| **Colour scheme** | Edit the CSS variables in `:root` and `@media (prefers-color-scheme: dark)`. |
-| **Archive depth** | Change `archive_files[5:]` in `generate_page.py` to keep more/fewer days. |
+| Setting | Value |
+|---------|-------|
+| Name | `news-briefing` |
+| Cron | `0 0 * * *` (midnight UTC — see timezone table below) |
+| Model | `claude-sonnet-4-6` (NOT Opus — Opus is too slow and times out) |
+| persist_session | `true` |
 
-### 4. Set Up GitHub Actions (`fetch-news.yml`)
-
-This workflow runs 5 minutes before your Claude trigger to pre-fetch articles:
-
-```yaml
-name: Fetch News Data
-
-on:
-  schedule:
-    - cron: '55 23 * * *'  # 5 min before trigger
-  workflow_dispatch:        # Manual trigger
-
-permissions:
-  contents: write
-
-jobs:
-  fetch:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-      - run: pip install -r requirements.txt
-      - run: cd src && python main.py fetch
-        env:
-          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
-      - run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/fetched.json
-          git diff --staged --quiet || git commit -m "Fetch news data $(date -u +%Y-%m-%d)"
-          git push
-```
-
-**Add the `NEWS_API_KEY` secret** in your repo: Settings → Secrets → Actions → New repository secret.
-
-### 5. Create a GitHub Personal Access Token
-
-1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
-2. Name: `news-briefing-bot`
-3. Repository access: Only select your repo
-4. Permissions: Contents → Read and write
-5. Generate and save the token securely (e.g., `~/.secrets/github-pat.txt`)
-
-**Never paste tokens in chat.** Save to a local file, then tell Claude the file path.
-
-### 6. Enable GitHub Pages
-
-1. Repo → Settings → Pages
-2. Source: Deploy from a branch
-3. Branch: `main`, folder: `/docs`
-4. Save
-
-Your page will be live at: `https://<username>.github.io/<repo-name>/`
-
-### 7. Create the Claude Code Scheduled Trigger
-
-The trigger prompt has two phases:
-
-**Phase 1 (parent agent):** Clone repo → read articles → write Markdown briefing → convert to HTML → push to GitHub
-
-**Phase 2 (subagent):** Write to Notion + send Slack DM
-
-Key elements of the trigger configuration:
-- **Model:** `claude-sonnet-4-6` (fast enough to avoid timeouts)
-- **Cron:** `0 0 * * *` (adjust to your timezone needs)
-- **persist_session:** `true` (safety net if agent pauses)
-- **allowed_tools:** `["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "mcp__Notion__*", "mcp__Slack__*"]`
-- **MCP connections:** Notion and Slack connectors
-
-#### The Markdown Format
-
-The agent writes Markdown, not JSON. This is the critical design decision that makes the pipeline reliable:
-
-```markdown
-## World & Markets
-### Top Headlines
-#### US Announces New Tariffs on Chinese Tech | Reuters | https://reuters.com/...
-EN: The US has announced new tariffs targeting Chinese semiconductor exports. The move is expected to escalate trade tensions.
-CN: 美国宣布对中国半导体出口征收新关税。此举预计将加剧贸易紧张局势。
-TitleCN: 美国宣布对中国科技出口征收新关税
-
-#### Another Headline | Source | URL
-EN: Summary.
-CN: 摘要。
-TitleCN: 中文标题
-```
-
-`parse_briefing.py` converts this to structured JSON, which `generate_page.py` renders into HTML.
-
-#### Personalisation choices for the trigger:
-
-| What to customise | How |
-|-------------------|-----|
-| **Schedule** | Change `cron_expression`. Use [crontab.guru](https://crontab.guru) to build expressions. |
-| **Item count** | Change "15-18 items" in the prompt. More items = higher timeout risk. |
-| **Content focus** | Edit the "CRITICAL CONTENT RULES" section. Add/remove subsections, change weights. |
-| **Languages** | Replace `CN:` and `TitleCN:` with your language. Update `parse_briefing.py` regex accordingly. |
-| **Output channels** | Remove Notion/Slack tasks from the subagent prompt if not needed. |
-| **Notion structure** | Change page titles, parent page name, block types in the subagent prompt. |
-| **Slack format** | Customise the message format, channel (DM vs channel), number of headlines. |
-
-### 8. MCP Connector Setup
-
-If using Notion and/or Slack, attach MCP connectors to your trigger:
-
-```json
-"mcp_connections": [
-  {
-    "connector_uuid": "<your-notion-connector-id>",
-    "name": "Notion",
-    "url": "https://mcp.notion.com/mcp"
-  },
-  {
-    "connector_uuid": "<your-slack-connector-id>",
-    "name": "Slack",
-    "url": "https://mcp.slack.com/mcp"
-  }
-]
-```
-
-Find your connector UUIDs from an existing trigger or the Claude Code settings.
-
-**Important:** MCP tools don't work on the trigger's first turn (platform bug). The subagent pattern is the workaround — the parent agent spawns a subagent via the `Agent` tool, and the subagent properly initializes MCP connectors.
-
----
-
-## Lessons Learned
-
-### What Failed and Why
-
-| Attempt | What happened | Root cause |
-|---------|--------------|------------|
-| Agent writes large JSON directly | Agent stops mid-task, sends text-only message | Models "announce" before writing large output, ending the turn |
-| Opus model for generation | Times out | Opus output speed too slow for the content volume |
-| RSS feeds in remote trigger | Connection blocked | Remote env restricts outbound HTTP |
-| MCP tools on first turn | Tools not found | Platform bug — deferred tool registry doesn't include MCP until after user interaction |
-| `pip install` in remote env | `sgmllib3k` build fails | Python 3.12+ dropped `sgmllib` module |
-| `persist_session: false` | Agent stops, no way to continue | Text-only messages end the turn permanently |
-
-### What Worked
-
-| Pattern | Why it works |
-|---------|-------------|
-| **LLM writes Markdown, Python converts** | Natural output format, no timeout risk, easy to parse |
-| **GitHub Actions for fetching** | Full network access, commits data for the trigger to read |
-| **Subagent delegation for MCP** | Subagents properly initialize MCP connectors |
-| **Sonnet for generation** | 3x faster than Opus, sufficient quality for news summaries |
-| **setup.sh for dependencies** | Handles `sgmllib3k` build issue reliably |
-| **Compact article input (30 max)** | Reduces context, leaves headroom for output |
-
-### Research Sources
-
-These open-source projects informed the architecture:
-
-- [ai-news-bot](https://github.com/giftedunicorn/ai-news-bot) — LLM writes natural text, not JSON
-- [auto-news](https://github.com/finaldie/auto-news) — Airflow DAGs for pipeline orchestration
-- [Chronicle-n8n](https://github.com/coeusyk/chronicle-n8n) — Tiny JSON per item, not giant blobs
-- [Agently Daily News](https://github.com/AgentEra/Agently-Daily-News-Collector) — Editorial pipeline with YAML prompt schemas
-- [AI-News-Briefing](https://github.com/hoangsonww/AI-News-Briefing) — Claude Code as agentic runtime
-
----
-
-## Appendix: RSS Feeds
-
-### Working RSS feeds (verified)
-
-**AI/ML:**
-- TechCrunch AI: `https://techcrunch.com/category/artificial-intelligence/feed/`
-- The Verge AI: `https://www.theverge.com/rss/ai-artificial-intelligence/index.xml`
-- Ars Technica: `https://feeds.arstechnica.com/arstechnica/index`
-- VentureBeat AI: `https://venturebeat.com/category/ai/feed/`
-- MIT Technology Review: `https://www.technologyreview.com/feed/`
-- OpenAI Blog: `https://openai.com/blog/rss.xml`
-- Google AI Blog: `https://blog.google/technology/ai/rss/`
-- NVIDIA AI: `https://blogs.nvidia.com/feed/`
-- Microsoft Research: `https://www.microsoft.com/en-us/research/feed/`
-- ArXiv cs.AI/cs.LG/cs.CL: `https://rss.arxiv.org/rss/cs.AI` (also cs.LG, cs.CL)
-- IEEE Spectrum: `https://spectrum.ieee.org/feeds/feed.rss`
-- BAIR: `https://bair.berkeley.edu/blog/feed.xml`
-- Import AI: `https://importai.substack.com/feed`
-- Benedict Evans: `https://www.ben-evans.com/benedictevans?format=rss`
-
-**Finance/PE:**
-- Bloomberg: `https://feeds.bloomberg.com/markets/news.rss`
-- Financial Times: `https://www.ft.com/rss/home`
-- Finextra: `https://www.finextra.com/rss/headlines.aspx`
-- PYMNTS: `https://www.pymnts.com/feed/`
-- American Banker: `https://www.americanbanker.com/feed.rss`
-
-**General News:**
-- BBC World: `https://feeds.bbci.co.uk/news/world/rss.xml`
-- Al Jazeera: `https://www.aljazeera.com/xml/rss/all.xml`
-- The Economist: `https://www.economist.com/the-world-this-week/rss.xml`
-- CNBC: `https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114`
-- WSJ: `https://feeds.a.dj.com/rss/RSSMarketsMain.xml`
-
-**Science:**
-- Nature: `https://www.nature.com/nature.rss`
-- Science AAAS: `https://www.science.org/rss/news_current.xml`
-- New Scientist: `https://www.newscientist.com/feed/home/`
-
-**Think Tanks:**
-- CSIS: `https://www.csis.org/rss.xml`
-- CFR: `https://feeds.feedburner.com/cfr_main`
-- Politico EU: `https://www.politico.eu/feed/`
-
-### No RSS (use NewsAPI instead)
-- Anthropic Blog, PitchBook, Reuters, AP, Stanford HAI
-
----
-
-## Appendix: Cost
-
-| Component | Cost |
-|-----------|------|
-| Claude Code trigger | Included in Claude Pro/Team subscription |
-| GitHub Actions | Free tier (2000 min/month) |
-| GitHub Pages | Free for public repos |
-| NewsAPI | Free tier (100 req/day) |
-| Notion MCP | Free |
-| Slack MCP | Free |
-| **Total** | **$0/month** (beyond existing Claude subscription) |
-
----
-
-## Appendix: Timezone Reference
-
-The cron schedules use UTC. Common conversions:
-
-| Your timezone | 8am local = UTC | Cron for 8am delivery |
-|---------------|-----------------|----------------------|
-| Berlin (CEST, summer) | 06:00 UTC | `0 6 * * *` |
-| Berlin (CET, winter) | 07:00 UTC | `0 7 * * *` |
-| China (CST) | 00:00 UTC | `0 0 * * *` |
-| US East (EDT) | 12:00 UTC | `0 12 * * *` |
-| US West (PDT) | 15:00 UTC | `0 15 * * *` |
-| London (BST) | 07:00 UTC | `0 7 * * *` |
-
-Set the fetch workflow 5 minutes before the trigger.
-
----
-
-## Appendix: Claude Code Trigger Prompt Template
-
-Copy this template and customise the bracketed sections for your setup. Create the trigger via Claude Code's `/schedule` command or the RemoteTrigger API.
-
-**Configuration:**
-- Model: `claude-sonnet-4-6`
-- Cron: `0 0 * * *` (adjust to your timezone)
-- persist_session: `true`
-- allowed_tools: `["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "mcp__Notion__*", "mcp__Slack__*"]`
-- MCP connections: Notion + Slack (optional, remove if not needed)
-
-**Prompt:**
+**The trigger prompt** (replace the bracketed parts):
 
 ```
 You are an AUTONOMOUS remote agent. NO human is watching. NEVER send text-only messages. EVERY response MUST contain a tool call.
@@ -429,43 +136,78 @@ You are an AUTONOMOUS remote agent. NO human is watching. NEVER send text-only m
 ## Phase 1: Build the briefing (do this yourself)
 
 ### Step 1: Setup
+```bash
 git clone https://[YOUR_GITHUB_PAT]@github.com/[YOUR_USERNAME]/[YOUR_REPO].git /tmp/nb 2>&1 && cd /tmp/nb && bash setup.sh 2>&1 | tail -5
+```
 
 ### Step 2: Read articles
+```bash
 cd /tmp/nb/src && python summarize_cli.py /tmp/nb/data/fetched.json 2>&1
+```
 If file missing, use WebSearch for today's news.
 
 ### Step 3: Write briefing
-IMMEDIATELY use Write tool to create /tmp/nb/data/briefing.md. Do NOT announce it.
+IMMEDIATELY use Write tool to create `/tmp/nb/data/briefing.md`. Do NOT announce it.
 
 Write 15-18 items. Format:
 
-## [SECTION NAME]
-### [SUBSECTION NAME]
+## World & Markets
+### Top Headlines
 #### Title in English | Source | URL
 EN: 2 sentence summary.
-CN: [YOUR SECOND LANGUAGE] summary.
-TitleCN: [YOUR SECOND LANGUAGE] title translation
+CN: 中文摘要。2句。
+TitleCN: 中文标题
 
-[REPEAT FOR ALL YOUR SECTIONS/SUBSECTIONS]
+### US-China Relations
+#### Title | Source | URL
+EN: Summary.
+CN: 摘要。
+TitleCN: 中文标题
+
+### Financial Markets
+...
+### Science & Technology Breakthroughs
+...
+## AI & Technology
+### Research & Papers
+...
+### Industry News
+...
+### Key People & Company Updates
+...
+## Private Equity & VC
+### Deals & Fundraising
+...
+### Fund News & Trends
+...
+## Fintech
+### Platforms & Products
+...
 
 CRITICAL CONTENT RULES:
-[YOUR CONTENT RULES — topics, weights, must-include items, editorial preferences]
+- EVERY item MUST have EN:, CN:, and TitleCN: fields
+- [YOUR CONTENT RULES: topics, weights, must-include items]
+- 2 sentences each summary
+- Total: 15-18 items
 
 ### Step 4: Build HTML
+```bash
 cd /tmp/nb/src && python parse_briefing.py /tmp/nb/data/briefing.md /tmp/nb/data/summarized.json 2>&1 && python main.py generate /tmp/nb/data/summarized.json 2>&1
+```
 
 ### Step 5: Push to GitHub
+```bash
 cd /tmp/nb && git config user.name "news-briefing-bot" && git config user.email "bot@users.noreply.github.com" && git add docs/ && git diff --staged --quiet || git commit -m "Update briefing $(date -u +%Y-%m-%d)" && git push 2>&1
+```
 
 ## Phase 2: Write to Notion and Slack (MUST use subagent)
-
-[OPTIONAL — remove this phase if you don't use Notion/Slack]
 
 IMPORTANT: MCP tools do NOT work directly in this trigger session. You MUST delegate to a SUBAGENT using the Agent tool.
 
 Read the briefing markdown first:
+```bash
 cat /tmp/nb/data/briefing.md
+```
 
 Then spawn a subagent with the Agent tool. Pass the FULL briefing content in the prompt:
 
@@ -473,35 +215,171 @@ Then spawn a subagent with the Agent tool. Pass the FULL briefing content in the
 
 ## Task 1: Write to Notion
 1. Use ToolSearch with query 'notion' to load Notion MCP tools.
-2. Search for a page called '[YOUR PARENT PAGE NAME]' using notion-search. If not found, create it.
-3. Create a child page titled '[YOUR PAGE TITLE] — YYYY-MM-DD' (today's date).
-4. Write content as Notion blocks with hyperlinked article titles.
+2. Search for a page called '[YOUR PAGE NAME]' using notion-search. Create if not found.
+3. Create a child page titled '[YOUR PAGE NAME] — YYYY-MM-DD'.
+4. Write content as Notion blocks: heading_2 per section, heading_3 per subsection, bulleted items with title as HYPERLINK + source + summary.
+5. Every article MUST have a clickable link.
 
-## Task 2: Send Slack message
+## Task 2: Send ONE Slack message
+CRITICAL: Send EXACTLY ONE message. Do NOT retry if successful.
 1. Use ToolSearch with query 'slack' to load Slack MCP tools.
-2. Send a DM to [YOUR NAME] with top 5 headlines and link to the full page.
+2. Search for user '[YOUR NAME]' using slack_search_users.
+3. Send ONE DM with top 5 headlines and link to full briefing.
+4. After sending, STOP. Do NOT send again.
 
 Here is the briefing content:
 [PASTE THE FULL BRIEFING.MD CONTENT HERE]"
 
 ## Phase 3: Verify
+```bash
 head -20 /tmp/nb/docs/index.html
 ```
+```
 
-### Language Customisation
+**MCP connectors** (optional): If you want Notion and Slack, attach these connectors to your trigger. You can find your connector UUIDs from an existing trigger or Claude Code settings.
 
-The default setup uses English + Chinese. To change the second language:
+**If you don't want Notion/Slack:** Remove Phase 2 entirely from the prompt. The web page will still work.
 
-1. **Trigger prompt:** Replace `CN:` and `TitleCN:` with your language code (e.g., `FR:`, `TitleFR:`)
-2. **`src/parse_briefing.py`:** Update the regex patterns to match your new field names
-3. **`src/generate_page.py`:** Update `SECTION_CN` and `SUBSECTION_CN` dicts with your translations
-4. **`src/template.html`:** Replace `中文` button label and `lang-cn` CSS classes
+### Step 8: Set the fetch schedule
 
-### Content Customisation
+The GitHub Actions workflow needs to run ~5 minutes before your Claude trigger.
 
-To change topics entirely (e.g., sports + entertainment instead of finance + tech):
+Edit `.github/workflows/fetch-news.yml` and change the cron:
+```yaml
+schedule:
+  - cron: '55 23 * * *'   # 23:55 UTC = 5 min before midnight trigger
+```
 
-1. **`src/sources.yaml`:** Replace all categories, RSS feeds, and NewsAPI queries
-2. **`src/parse_briefing.py`:** Update `SECTION_MAP` and `section_order` to match your new categories
-3. **`src/generate_page.py`:** Update `SECTION_CN` and `SUBSECTION_CN` translation dicts
+### Step 9: Test it
+
+1. Run the **Fetch News Data** workflow manually (Actions → Run workflow)
+2. Then manually run your Claude trigger (from Claude Code: `/schedule run news-briefing`, or via the trigger management page)
+3. Wait ~5-10 minutes
+4. Check your GitHub Pages URL — should show today's briefing
+
+---
+
+## Timezone reference
+
+| Your timezone | 8am local = UTC | Fetch cron (5 min before) | Trigger cron |
+|---------------|-----------------|--------------------------|--------------|
+| China (CST) | 00:00 UTC | `55 23 * * *` | `0 0 * * *` |
+| Berlin (CEST) | 06:00 UTC | `55 5 * * *` | `0 6 * * *` |
+| Berlin (CET) | 07:00 UTC | `55 6 * * *` | `0 7 * * *` |
+| London (BST) | 07:00 UTC | `55 6 * * *` | `0 7 * * *` |
+| US East (EDT) | 12:00 UTC | `55 11 * * *` | `0 12 * * *` |
+| US West (PDT) | 15:00 UTC | `55 14 * * *` | `0 15 * * *` |
+
+---
+
+## Customisation guide
+
+### Change the language
+
+Default is English + Chinese. To switch to e.g., English + French:
+
+1. **Trigger prompt:** Replace `CN:` with `FR:`, `TitleCN:` with `TitleFR:`, and Chinese instructions with French
+2. **`src/parse_briefing.py`:** Update the regex `CN:` → `FR:` and `TitleCN:` → `TitleFR:`
+3. **`src/generate_page.py`:** Rename `SECTION_CN`/`SUBSECTION_CN` dicts and translate values to French
+4. **`src/template.html`:** Replace `中文` button label, `lang-cn` CSS classes with `lang-fr`
+
+### Change the topics
+
+To replace sections (e.g., Sports instead of Fintech):
+
+1. **`src/sources.yaml`:** Replace the category, its RSS feeds, and NewsAPI queries
+2. **`src/parse_briefing.py`:** Update `SECTION_MAP` and `section_order`
+3. **`src/generate_page.py`:** Update translation dicts
 4. **Trigger prompt:** Update section names, subsections, and content rules
+
+### Change the look
+
+- **Colours:** Edit CSS variables in `:root` in `src/template.html`
+- **Dark mode:** Edit `@media (prefers-color-scheme: dark)` block
+- **Layout:** Edit the HTML structure in `template.html`
+- **Archive depth:** Change `archive_files[5:]` in `generate_page.py` to keep more/fewer days
+
+### Remove Notion/Slack
+
+Delete Phase 2 from the trigger prompt. Remove MCP connections from the trigger config. Everything else works independently.
+
+---
+
+## How it works (architecture)
+
+```
+23:55 UTC — GitHub Actions
+  └── Python fetches RSS feeds + NewsAPI → commits data/fetched.json
+
+00:00 UTC — Claude Code Trigger (Sonnet)
+  Phase 1 (parent agent):
+    ├── Clones repo (fetched.json already there)
+    ├── Reads article list via summarize_cli.py (capped at 30)
+    ├── Writes briefing as Markdown (EN/CN summaries)
+    ├── Python converts Markdown → JSON → HTML
+    └── Pushes HTML to GitHub Pages
+
+  Phase 2 (subagent):
+    ├── Writes to Notion with hyperlinked articles
+    └── Sends one Slack DM with top 5 headlines
+```
+
+### Why Markdown, not JSON?
+
+LLMs are bad at writing large JSON files — they stop mid-output or time out. Every successful open-source news agent (ai-news-bot, Agently, Chronicle) has the LLM write natural text, then code converts it to structured data. We learned this the hard way after multiple failed attempts.
+
+### Why a subagent for Notion/Slack?
+
+There's a platform bug: MCP connector tools don't load on the first turn of a remote trigger. Spawning a subagent via the Agent tool properly initializes them. This is the confirmed workaround.
+
+### Why Sonnet, not Opus?
+
+Opus writes ~3x slower. The briefing Markdown is ~3-4K tokens, which Opus can't reliably complete before the trigger times out. Sonnet handles it comfortably with the same quality for news summaries.
+
+### Why GitHub Actions fetches and Claude summarises?
+
+The remote trigger environment blocks outbound HTTP to external sites (RSS feeds). GitHub Actions has full network access. So we split: Actions fetches, Claude thinks.
+
+---
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Trigger stops mid-task | Text-only message ends the turn | Add "NEVER send text-only messages" to prompt. Use `persist_session: true` |
+| RSS feeds return 0 articles | Blocked in remote env | This is expected — agent falls back to WebSearch |
+| `sgmllib3k` build fails | Python 3.12+ dropped sgmllib | `setup.sh` handles this — make sure Step 1 uses `bash setup.sh` |
+| Git push fails | No credentials | Embed PAT in clone URL: `https://TOKEN@github.com/...` |
+| Notion tools not found | MCP bug on first turn | Use subagent delegation (Phase 2) |
+| Duplicate Slack messages | Subagent retried | Add "Send EXACTLY ONE message" to subagent prompt |
+| Page not updating | GitHub Pages cache | Hard refresh (Ctrl+Shift+R) or wait ~5 min for CDN |
+
+---
+
+## Cost
+
+| Component | Cost |
+|-----------|------|
+| Claude Code trigger | Included in Claude Pro/Team subscription |
+| GitHub Actions | Free (2000 min/month) |
+| GitHub Pages | Free (public repos) |
+| NewsAPI | Free (100 req/day) |
+| **Total** | **$0/month** (beyond Claude subscription) |
+
+---
+
+## RSS feeds included
+
+See `src/sources.yaml` for the full list. Highlights:
+
+- **AI/ML:** TechCrunch, The Verge, Ars Technica, VentureBeat, MIT Tech Review, OpenAI, Google AI, NVIDIA, ArXiv, IEEE Spectrum, BAIR, Import AI
+- **Finance/PE:** Bloomberg, Financial Times, Finextra, PYMNTS, American Banker
+- **World:** BBC, Al Jazeera, The Economist, CNBC, WSJ
+- **Science:** Nature, Science AAAS, New Scientist
+- **Think tanks:** CSIS, CFR, Politico EU
+
+---
+
+## Credits
+
+Built with [Claude Code](https://claude.ai/code) using scheduled triggers, GitHub Actions, and GitHub Pages.
