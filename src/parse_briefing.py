@@ -58,7 +58,24 @@ def parse_entry(lines: list[str]) -> dict | None:
     detail_en = ""
     detail_cn = ""
 
-    # Split by markers
+    # Try simple EN:/CN: format first
+    en_match = re.search(r"(?:^|\n)EN:\s*(.+?)(?=\nCN:|\n---|\Z)", body, re.DOTALL)
+    cn_match = re.search(r"(?:^|\n)CN:\s*(.+?)(?=\n---|\nEN:|\Z)", body, re.DOTALL)
+
+    if en_match:
+        summary_en = en_match.group(1).strip()
+        summary_cn = cn_match.group(1).strip() if cn_match else summary_en
+        # detail = summary for this simple format
+        detail_en = summary_en
+        detail_cn = summary_cn
+        if not title or not summary_en:
+            return None
+        return {
+            "title": title, "summary_en": summary_en, "summary_cn": summary_cn,
+            "url": url, "source": source, "detail_en": detail_en, "detail_cn": detail_cn,
+        }
+
+    # Legacy ---CN--- marker format
     if "---CN---" in body:
         before_cn, after_cn = body.split("---CN---", 1)
         summary_en = before_cn.strip()
