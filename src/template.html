@@ -190,15 +190,26 @@
 
         .item-header {
             display: flex;
-            align-items: flex-start;
+            align-items: baseline;
             gap: 8px;
-            cursor: pointer;
+            flex-wrap: wrap;
         }
 
         .item-title {
             font-weight: 500;
             font-size: 0.95rem;
             flex: 1;
+            min-width: 200px;
+        }
+
+        .item-title a {
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .item-title a:hover {
+            color: var(--accent);
+            text-decoration: underline;
         }
 
         .item-source {
@@ -207,34 +218,19 @@
             white-space: nowrap;
         }
 
-        .item-expand {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            transition: transform 0.2s;
-            flex-shrink: 0;
+        .item-source a {
+            color: var(--accent);
+            text-decoration: none;
         }
 
-        .item.expanded .item-expand { transform: rotate(90deg); }
+        .item-source a:hover { text-decoration: underline; }
 
         .item-summary {
-            margin-top: 8px;
+            margin-top: 6px;
             font-size: 0.92rem;
             color: var(--text-secondary);
             line-height: 1.65;
-            padding-left: 4px;
         }
-
-        .item-detail {
-            display: none;
-            margin-top: 8px;
-            padding: 12px;
-            background: var(--bg-secondary);
-            border-radius: 6px;
-            font-size: 0.88rem;
-            line-height: 1.6;
-        }
-
-        .item.expanded .item-detail { display: block; }
 
         .item-link {
             display: inline-block;
@@ -338,22 +334,17 @@
             </div>
             {% for item in subsection.entries %}
             <div class="item">
-                <div class="item-header" onclick="toggleItem(this.parentElement)">
-                    <span class="item-title">{{ item.title }}</span>
-                    <span class="item-source">{{ item.source }}</span>
-                    <span class="item-expand">▶</span>
+                <div class="item-header">
+                    <span class="item-title">
+                        {% if item.url %}<a href="{{ item.url }}" target="_blank">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+                    </span>
+                    <span class="item-source">
+                        {% if item.url %}<a href="{{ item.url }}" target="_blank">{{ item.source }} →</a>{% else %}{{ item.source }}{% endif %}
+                    </span>
                 </div>
                 <div class="item-summary">
                     <span class="lang-en">{{ item.summary_en }}</span>
                     <span class="lang-cn">{{ item.summary_cn }}</span>
-                </div>
-                <div class="item-detail">
-                    <span class="lang-en">{{ item.detail_en }}</span>
-                    <span class="lang-cn">{{ item.detail_cn }}</span>
-                    <br><a class="item-link" href="{{ item.url }}" target="_blank">
-                        <span class="lang-en">Read full article →</span>
-                        <span class="lang-cn">阅读全文 →</span>
-                    </a>
                 </div>
             </div>
             {% endfor %}
@@ -383,11 +374,6 @@
         // Section collapse/expand
         function toggleSection(el) {
             el.classList.toggle('collapsed');
-        }
-
-        // Item expand/collapse
-        function toggleItem(el) {
-            el.classList.toggle('expanded');
         }
 
         // Refresh — triggers GitHub Actions workflow_dispatch
