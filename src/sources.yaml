@@ -1,0 +1,278 @@
+# Daily News Briefing — Source Configuration
+# Categories map to display sections; weight determines relative coverage
+
+categories:
+  world_and_markets:
+    display_name: "World & Markets"
+    weight: 0.40
+    subsections:
+      - "Top Headlines"
+      - "US-China Relations"
+      - "Financial Markets"
+      - "Science & Technology Breakthroughs"
+
+  ai_and_technology:
+    display_name: "AI & Technology"
+    weight: 0.30  # 50% of 60% professional
+    subsections:
+      - "Research & Papers"
+      - "Industry News"
+      - "Key People & Company Updates"
+
+  private_equity_and_vc:
+    display_name: "Private Equity & VC"
+    weight: 0.18  # 30% of 60% professional
+    subsections:
+      - "Deals & Fundraising"
+      - "Fund News & Trends"
+
+  fintech:
+    display_name: "Fintech"
+    weight: 0.12  # 20% of 60% professional
+    subsections:
+      - "Platforms & Products"
+      - "Regulation"
+
+# RSS Feeds
+rss_feeds:
+  # --- AI/ML Trade Press ---
+  - name: "TechCrunch AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+    category: "ai_and_technology"
+    subsection: "Industry News"
+
+  - name: "The Verge AI"
+    url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+    category: "ai_and_technology"
+    subsection: "Industry News"
+
+  - name: "Ars Technica"
+    url: "https://feeds.arstechnica.com/arstechnica/index"
+    category: "ai_and_technology"
+    subsection: "Industry News"
+
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+    category: "ai_and_technology"
+    subsection: "Industry News"
+
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/feed/"
+    category: "ai_and_technology"
+    subsection: "Industry News"
+
+  # --- AI Company Blogs ---
+  - name: "OpenAI Blog"
+    url: "https://openai.com/blog/rss.xml"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/rss/"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - name: "Meta Engineering"
+    url: "https://engineering.fb.com/feed/"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - name: "NVIDIA AI Blog"
+    url: "https://blogs.nvidia.com/feed/"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - name: "Microsoft Research"
+    url: "https://www.microsoft.com/en-us/research/feed/"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - name: "Hugging Face Blog"
+    url: "https://huggingface.co/blog/feed.xml"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  # --- AI Research ---
+  - name: "ArXiv cs.AI"
+    url: "https://rss.arxiv.org/rss/cs.AI"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+  - name: "ArXiv cs.LG"
+    url: "https://rss.arxiv.org/rss/cs.LG"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+  - name: "ArXiv cs.CL"
+    url: "https://rss.arxiv.org/rss/cs.CL"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+  - name: "IEEE Spectrum"
+    url: "https://spectrum.ieee.org/feeds/feed.rss"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+  # --- PE/VC ---
+  - name: "Bloomberg"
+    url: "https://feeds.bloomberg.com/markets/news.rss"
+    category: "private_equity_and_vc"
+    subsection: "Fund News & Trends"
+
+  - name: "Financial Times"
+    url: "https://www.ft.com/rss/home"
+    category: "private_equity_and_vc"
+    subsection: "Fund News & Trends"
+
+  # --- Fintech ---
+  - name: "Finextra"
+    url: "https://www.finextra.com/rss/headlines.aspx"
+    category: "fintech"
+    subsection: "Platforms & Products"
+
+  - name: "PYMNTS"
+    url: "https://www.pymnts.com/feed/"
+    category: "fintech"
+    subsection: "Platforms & Products"
+
+  - name: "American Banker"
+    url: "https://www.americanbanker.com/feed.rss"
+    category: "fintech"
+    subsection: "Platforms & Products"
+
+  # --- General News ---
+  - name: "BBC World"
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+    category: "world_and_markets"
+    subsection: "Top Headlines"
+
+  - name: "Al Jazeera English"
+    url: "https://www.aljazeera.com/xml/rss/all.xml"
+    category: "world_and_markets"
+    subsection: "Top Headlines"
+
+  - name: "The Economist"
+    url: "https://www.economist.com/the-world-this-week/rss.xml"
+    category: "world_and_markets"
+    subsection: "Top Headlines"
+
+  - name: "The Economist Finance"
+    url: "https://www.economist.com/finance-and-economics/rss.xml"
+    category: "world_and_markets"
+    subsection: "Financial Markets"
+
+  # --- Science ---
+  - name: "Nature News"
+    url: "https://www.nature.com/nature.rss"
+    category: "world_and_markets"
+    subsection: "Science & Technology Breakthroughs"
+
+  - name: "Science AAAS"
+    url: "https://www.science.org/rss/news_current.xml"
+    category: "world_and_markets"
+    subsection: "Science & Technology Breakthroughs"
+
+  - name: "New Scientist"
+    url: "https://www.newscientist.com/feed/home/"
+    category: "world_and_markets"
+    subsection: "Science & Technology Breakthroughs"
+
+  # --- Markets ---
+  - name: "CNBC"
+    url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114"
+    category: "world_and_markets"
+    subsection: "Financial Markets"
+
+  - name: "Wall Street Journal"
+    url: "https://feeds.a.dj.com/rss/RSSMarketsMain.xml"
+    category: "world_and_markets"
+    subsection: "Financial Markets"
+
+  # --- Think Tanks ---
+  - name: "Brookings"
+    url: "https://www.brookings.edu/feed/"
+    category: "world_and_markets"
+    subsection: "Top Headlines"
+
+  - name: "CSIS"
+    url: "https://www.csis.org/rss.xml"
+    category: "world_and_markets"
+    subsection: "US-China Relations"
+
+  - name: "Council on Foreign Relations"
+    url: "https://feeds.feedburner.com/cfr_main"
+    category: "world_and_markets"
+    subsection: "US-China Relations"
+
+  # --- Academic ---
+  - name: "MIT CSAIL"
+    url: "https://news.mit.edu/rss/topic/artificial-intelligence2"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+  - name: "BAIR"
+    url: "https://bair.berkeley.edu/blog/feed.xml"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+  # --- EU ---
+  - name: "Politico EU"
+    url: "https://www.politico.eu/feed/"
+    category: "world_and_markets"
+    subsection: "Top Headlines"
+
+  # --- Newsletters / Analyst Blogs ---
+  - name: "Benedict Evans"
+    url: "https://www.ben-evans.com/benedictevans?format=rss"
+    category: "ai_and_technology"
+    subsection: "Industry News"
+
+  - name: "Import AI"
+    url: "https://importai.substack.com/feed"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+# NewsAPI queries — for sources without RSS feeds
+newsapi_queries:
+  - query: "Anthropic AI"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - query: "private equity fundraising OR private equity deals"
+    category: "private_equity_and_vc"
+    subsection: "Deals & Fundraising"
+
+  - query: "Sequoia Capital OR Andreessen Horowitz OR KKR OR Blackstone OR Apollo Global OR Carlyle OR TPG OR Thoma Bravo OR Silver Lake OR EQT Partners"
+    category: "private_equity_and_vc"
+    subsection: "Deals & Fundraising"
+
+  - query: "US China relations OR US China trade OR US China technology"
+    category: "world_and_markets"
+    subsection: "US-China Relations"
+
+  - query: "Andrej Karpathy OR Yann LeCun OR Andrew Ng OR Demis Hassabis OR Jeff Dean OR Jim Fan AI"
+    category: "ai_and_technology"
+    subsection: "Key People & Company Updates"
+
+  - query: "ILPA OR CalPERS private equity OR sovereign wealth fund investment"
+    category: "private_equity_and_vc"
+    subsection: "Fund News & Trends"
+
+  - query: "fintech regulation OR financial services technology"
+    category: "fintech"
+    subsection: "Regulation"
+
+  - query: "Federal Reserve OR ECB OR Bank of England monetary policy"
+    category: "world_and_markets"
+    subsection: "Financial Markets"
+
+  - query: "Stanford HAI artificial intelligence"
+    category: "ai_and_technology"
+    subsection: "Research & Papers"
+
+# Sources covered via NewsAPI (no RSS available):
+# - Anthropic Blog
+# - PitchBook News
+# - Reuters
+# - Associated Press
+# - Stanford HAI

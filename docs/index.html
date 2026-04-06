@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily News Briefing — 2026-04-06</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text: #1a1a1a;
+            --text-secondary: #555;
+            --border: #e0e0e0;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --breaking-bg: #fef2f2;
+            --breaking-border: #ef4444;
+            --badge-bg: #e5e7eb;
+            --badge-text: #374151;
+            --shadow: rgba(0,0,0,0.05);
+            --header-bg: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f0f0f;
+                --bg-secondary: #1a1a1a;
+                --text: #e5e5e5;
+                --text-secondary: #999;
+                --border: #333;
+                --accent: #60a5fa;
+                --accent-hover: #93bbfd;
+                --breaking-bg: #1c0a0a;
+                --breaking-border: #dc2626;
+                --badge-bg: #374151;
+                --badge-text: #d1d5db;
+                --shadow: rgba(0,0,0,0.3);
+                --header-bg: #0f0f0f;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 16px;
+            padding-top: 80px;
+        }
+
+        /* Sticky header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 12px 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        .btn-refresh {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .btn-refresh:hover { background: var(--accent-hover); }
+        .btn-refresh.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        /* Breaking news */
+        .breaking {
+            margin: 16px 0;
+            padding: 16px;
+            background: var(--breaking-bg);
+            border-left: 4px solid var(--breaking-border);
+            border-radius: 6px;
+        }
+
+        .breaking-label {
+            color: var(--breaking-border);
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        /* Sections */
+        .section {
+            margin: 24px 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 12px;
+            user-select: none;
+        }
+
+        .section-header:hover { border-color: var(--accent); }
+
+        .section-header h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .section-badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .section-toggle {
+            margin-left: auto;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .section.collapsed .section-toggle { transform: rotate(-90deg); }
+        .section.collapsed .section-body { display: none; }
+
+        /* Subsections */
+        .subsection-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin: 16px 0 8px;
+        }
+
+        /* Items */
+        .item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .item:last-child { border-bottom: none; }
+
+        .item-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .item-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .item-source {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .item-expand {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .item.expanded .item-expand { transform: rotate(90deg); }
+
+        .item-summary {
+            margin-top: 6px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .item-detail {
+            display: none;
+            margin-top: 8px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        .item.expanded .item-detail { display: block; }
+
+        .item-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent);
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        .item-link:hover { text-decoration: underline; }
+
+        /* Footer */
+        .footer {
+            margin: 32px 0 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            body { padding-top: 90px; }
+            .header h1 { font-size: 0.95rem; }
+            .btn { padding: 5px 10px; font-size: 0.8rem; }
+            .section-header h2 { font-size: 1rem; }
+        }
+
+        /* Language toggle visibility */
+        .lang-cn { display: none; }
+        body.show-cn .lang-en { display: none; }
+        body.show-cn .lang-cn { display: block; }
+        body.show-cn .lang-cn.inline { display: inline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-inner">
+            <h1>
+                <span class="lang-en">Daily News Briefing — 2026-04-06</span>
+                <span class="lang-cn inline">每日新闻简报 — 2026-04-06</span>
+            </h1>
+            <div class="header-controls">
+                <button class="btn" id="lang-toggle" onclick="toggleLang()">
+                    <span class="lang-en">中文</span>
+                    <span class="lang-cn inline">EN</span>
+                </button>
+                <button class="btn btn-refresh" id="refresh-btn" onclick="triggerRefresh()">
+                    ↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="breaking">
+        <div class="breaking-label">
+            <span class="lang-en">Breaking / Urgent</span>
+            <span class="lang-cn inline">突发 / 紧急</span>
+        </div>
+        
+        <div class="item">
+            <div class="item-header" onclick="toggleItem(this.parentElement)">
+                <span class="item-title">US Announces New Tariffs on Chinese Tech Exports</span>
+                <span class="item-expand">▶</span>
+            </div>
+            <div class="item-summary">
+                <span class="lang-en">The US has announced a new round of tariffs targeting Chinese semiconductor and AI technology exports. The move is expected to escalate trade tensions between the two nations.</span>
+                <span class="lang-cn">美国宣布对中国半导体和人工智能技术出口征收新一轮关税。此举预计将加剧两国之间的贸易紧张局势。</span>
+            </div>
+            <div class="item-detail">
+                <span class="lang-en">The tariffs, set to take effect next month, will cover semiconductor manufacturing equipment and AI training hardware. Industry analysts warn this could disrupt global supply chains.</span>
+                <span class="lang-cn">这些关税将于下月生效，涵盖半导体制造设备和AI训练硬件。行业分析师警告称，这可能会扰乱全球供应链。</span>
+                <br><a class="item-link" href="https://example.com/tariffs" target="_blank">
+                    <span class="lang-en">Read full article →</span>
+                    <span class="lang-cn">阅读全文 →</span>
+                </a>
+            </div>
+        </div>
+        
+    </div>
+    
+
+    
+    <div class="section" id="section-world_and_markets">
+        <div class="section-header" onclick="toggleSection(this.parentElement)">
+            <h2>
+                <span class="lang-en">World & Markets</span>
+                <span class="lang-cn inline">世界与市场</span>
+            </h2>
+            <span class="section-badge">5</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-body">
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Top Headlines</span>
+                <span class="lang-cn inline">头条新闻</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">ECB Signals Potential Rate Cut in June Meeting</span>
+                    <span class="item-source">Financial Times</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">European Central Bank officials hinted at a possible rate cut. Inflation data continues to moderate across the eurozone.</span>
+                    <span class="lang-cn">欧洲央行官员暗示可能降息。整个欧元区的通胀数据持续温和。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">ECB board member Isabel Schnabel noted that incoming data supports a more accommodative stance.</span>
+                    <span class="lang-cn">欧洲央行委员施纳贝尔指出，最新数据支持更宽松的立场。</span>
+                    <br><a class="item-link" href="https://example.com/ecb" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">Global Semiconductor Shortage Easing as New Fabs Come Online</span>
+                    <span class="item-source">Bloomberg</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">Major chip manufacturers report improving supply conditions as new fabrication plants begin production.</span>
+                    <span class="lang-cn">随着新工厂投产，主要芯片制造商报告供应状况正在改善。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">TSMC Arizona and Intel Ohio plants are now producing at initial capacity.</span>
+                    <span class="lang-cn">台积电亚利桑那工厂和英特尔俄亥俄工厂现已达到初始产能。</span>
+                    <br><a class="item-link" href="https://example.com/chips" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">US-China Relations</span>
+                <span class="lang-cn inline">中美关系</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">Beijing Responds to US Tech Export Controls with Rare Earth Restrictions</span>
+                    <span class="item-source">BBC World</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">China announced export controls on critical rare earth minerals used in defense and technology manufacturing.</span>
+                    <span class="lang-cn">中国宣布对关键稀土矿物实施出口管制。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The restrictions target gallium, germanium, and minerals essential for chip production.</span>
+                    <span class="lang-cn">限制措施针对镓、锗以及对芯片生产至关重要的矿物。</span>
+                    <br><a class="item-link" href="https://example.com/rareearth" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Financial Markets</span>
+                <span class="lang-cn inline">金融市场</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">S&P 500 Hits New Record on Strong Earnings Reports</span>
+                    <span class="item-source">CNBC</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">US markets rallied as major tech companies reported better-than-expected Q1 earnings.</span>
+                    <span class="lang-cn">随着主要科技公司公布好于预期的业绩，美国市场走高。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">Apple, Microsoft, and Alphabet all beat analyst expectations.</span>
+                    <span class="lang-cn">苹果、微软和Alphabet均超出分析师预期。</span>
+                    <br><a class="item-link" href="https://example.com/sp500" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Science & Technology Breakthroughs</span>
+                <span class="lang-cn inline">科技突破</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">CRISPR Gene Therapy Shows Promise in Treating Sickle Cell Disease</span>
+                    <span class="item-source">Nature News</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">A new CRISPR-based treatment has shown remarkable results in clinical trials for sickle cell disease.</span>
+                    <span class="lang-cn">一种新的CRISPR疗法在镰状细胞病临床试验中显示出显著效果。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The treatment modifies patients own stem cells to produce normal hemoglobin.</span>
+                    <span class="lang-cn">该疗法修改患者自身的干细胞以产生正常的血红蛋白。</span>
+                    <br><a class="item-link" href="https://example.com/crispr" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+        </div>
+    </div>
+    
+    <div class="section" id="section-ai_and_technology">
+        <div class="section-header" onclick="toggleSection(this.parentElement)">
+            <h2>
+                <span class="lang-en">AI & Technology</span>
+                <span class="lang-cn inline">人工智能与科技</span>
+            </h2>
+            <span class="section-badge">3</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-body">
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Research & Papers</span>
+                <span class="lang-cn inline">研究与论文</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">New Architecture Achieves State-of-the-Art on Reasoning Benchmarks</span>
+                    <span class="item-source">ArXiv cs.AI</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">Researchers propose a novel transformer variant that significantly improves performance on reasoning tasks.</span>
+                    <span class="lang-cn">研究人员提出了一种新型Transformer变体，显著提高了推理任务的性能。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The architecture introduces a hierarchical attention mechanism.</span>
+                    <span class="lang-cn">该架构引入了分层注意力机制。</span>
+                    <br><a class="item-link" href="https://example.com/arxiv1" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Industry News</span>
+                <span class="lang-cn inline">行业新闻</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">Anthropic Launches Claude 4.6 with Enhanced Coding Capabilities</span>
+                    <span class="item-source">TechCrunch</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">Anthropic released its latest Claude model family with significant improvements in code generation and agentic workflows.</span>
+                    <span class="lang-cn">Anthropic发布了最新的Claude模型系列，在代码生成和智能体工作流方面有显著改进。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The new models support extended context windows up to 1M tokens.</span>
+                    <span class="lang-cn">新模型支持高达100万token的扩展上下文窗口。</span>
+                    <br><a class="item-link" href="https://example.com/claude" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Key People & Company Updates</span>
+                <span class="lang-cn inline">重要人物与公司动态</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">Andrej Karpathy Announces New Open-Source AI Education Platform</span>
+                    <span class="item-source">VentureBeat</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">Former Tesla AI director launched a free platform for learning AI fundamentals with hands-on coding exercises.</span>
+                    <span class="lang-cn">前特斯拉AI总监推出了一个免费的AI基础学习平台。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The platform includes courses from basic neural networks to advanced LLM training.</span>
+                    <span class="lang-cn">该平台包含从基础神经网络到高级LLM训练的课程。</span>
+                    <br><a class="item-link" href="https://example.com/karpathy" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+        </div>
+    </div>
+    
+    <div class="section" id="section-private_equity_and_vc">
+        <div class="section-header" onclick="toggleSection(this.parentElement)">
+            <h2>
+                <span class="lang-en">Private Equity & VC</span>
+                <span class="lang-cn inline">私募股权与风投</span>
+            </h2>
+            <span class="section-badge">2</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-body">
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Deals & Fundraising</span>
+                <span class="lang-cn inline">交易与融资</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">KKR Closes Record $20B Infrastructure Fund</span>
+                    <span class="item-source">PitchBook</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">KKR has closed its largest-ever infrastructure fund, reflecting strong LP demand for real asset exposure.</span>
+                    <span class="lang-cn">KKR关闭了其有史以来最大的基础设施基金，反映出LP对实物资产配置的强劲需求。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The fund attracted commitments from over 200 institutional investors globally.</span>
+                    <span class="lang-cn">该基金吸引了全球200多家机构投资者的承诺出资。</span>
+                    <br><a class="item-link" href="https://example.com/kkr" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Fund News & Trends</span>
+                <span class="lang-cn inline">基金动态与趋势</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">Secondary Market Volume Hits All-Time High in Q1 2026</span>
+                    <span class="item-source">Institutional Investor</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">The PE secondary market saw record transaction volume as LPs seek liquidity.</span>
+                    <span class="lang-cn">随着LP寻求流动性，PE二级市场交易量创历史新高。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">Pricing has improved with average discounts narrowing to single digits.</span>
+                    <span class="lang-cn">定价有所改善，平均折价缩小至个位数。</span>
+                    <br><a class="item-link" href="https://example.com/secondary" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+        </div>
+    </div>
+    
+    <div class="section" id="section-fintech">
+        <div class="section-header" onclick="toggleSection(this.parentElement)">
+            <h2>
+                <span class="lang-en">Fintech</span>
+                <span class="lang-cn inline">金融科技</span>
+            </h2>
+            <span class="section-badge">1</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-body">
+            
+            
+            <div class="subsection-title">
+                <span class="lang-en">Platforms & Products</span>
+                <span class="lang-cn inline">平台与产品</span>
+            </div>
+            
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">Stripe Launches AI-Powered Fraud Detection for European Markets</span>
+                    <span class="item-source">Finextra</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">Stripe expanded its ML fraud detection to all EU markets, promising 40% reduction in false positives.</span>
+                    <span class="lang-cn">Stripe将其ML欺诈检测扩展到所有欧盟市场，承诺将误报减少40%。</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">The system uses transaction pattern analysis and device fingerprinting.</span>
+                    <span class="lang-cn">该系统使用交易模式分析和设备指纹识别。</span>
+                    <br><a class="item-link" href="https://example.com/stripe" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            
+            
+            
+            
+            
+        </div>
+    </div>
+    
+
+    <div class="footer">
+        <span class="lang-en">Generated 2026-04-06 00:00 UTC • Sources: 46 feeds</span>
+        <span class="lang-cn">生成时间 2026-04-06 00:00 UTC • 来源: 46 个信息源</span>
+    </div>
+
+    <script>
+        // Language toggle
+        function toggleLang() {
+            document.body.classList.toggle('show-cn');
+            localStorage.setItem('lang', document.body.classList.contains('show-cn') ? 'cn' : 'en');
+        }
+
+        // Restore saved language
+        if (localStorage.getItem('lang') === 'cn') {
+            document.body.classList.add('show-cn');
+        }
+
+        // Section collapse/expand
+        function toggleSection(el) {
+            el.classList.toggle('collapsed');
+        }
+
+        // Item expand/collapse
+        function toggleItem(el) {
+            el.classList.toggle('expanded');
+        }
+
+        // Refresh — triggers GitHub Actions workflow_dispatch
+        const GITHUB_REPO = '';
+        const WORKFLOW_FILE = 'daily-briefing.yml';
+
+        async function triggerRefresh() {
+            const btn = document.getElementById('refresh-btn');
+            const token = prompt('Enter GitHub PAT to trigger refresh:');
+            if (!token) return;
+
+            btn.classList.add('loading');
+            btn.textContent = '⏳';
+
+            try {
+                const resp = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                        },
+                        body: JSON.stringify({ ref: 'main' }),
+                    }
+                );
+
+                if (resp.status === 204) {
+                    btn.textContent = '✓';
+                    setTimeout(() => {
+                        btn.innerHTML = '↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>';
+                        btn.classList.remove('loading');
+                        alert('Build triggered! Page will update in ~2-3 minutes. Reload then.');
+                    }, 1500);
+                } else {
+                    throw new Error(`GitHub API returned ${resp.status}`);
+                }
+            } catch (e) {
+                btn.innerHTML = '↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>';
+                btn.classList.remove('loading');
+                alert('Failed to trigger refresh: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

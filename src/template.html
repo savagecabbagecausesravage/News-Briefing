@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily News Briefing — {{ date }}</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text: #1a1a1a;
+            --text-secondary: #555;
+            --border: #e0e0e0;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --breaking-bg: #fef2f2;
+            --breaking-border: #ef4444;
+            --badge-bg: #e5e7eb;
+            --badge-text: #374151;
+            --shadow: rgba(0,0,0,0.05);
+            --header-bg: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f0f0f;
+                --bg-secondary: #1a1a1a;
+                --text: #e5e5e5;
+                --text-secondary: #999;
+                --border: #333;
+                --accent: #60a5fa;
+                --accent-hover: #93bbfd;
+                --breaking-bg: #1c0a0a;
+                --breaking-border: #dc2626;
+                --badge-bg: #374151;
+                --badge-text: #d1d5db;
+                --shadow: rgba(0,0,0,0.3);
+                --header-bg: #0f0f0f;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 16px;
+            padding-top: 80px;
+        }
+
+        /* Sticky header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 12px 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        .btn-refresh {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .btn-refresh:hover { background: var(--accent-hover); }
+        .btn-refresh.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        /* Breaking news */
+        .breaking {
+            margin: 16px 0;
+            padding: 16px;
+            background: var(--breaking-bg);
+            border-left: 4px solid var(--breaking-border);
+            border-radius: 6px;
+        }
+
+        .breaking-label {
+            color: var(--breaking-border);
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        /* Sections */
+        .section {
+            margin: 24px 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 12px;
+            user-select: none;
+        }
+
+        .section-header:hover { border-color: var(--accent); }
+
+        .section-header h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .section-badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .section-toggle {
+            margin-left: auto;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .section.collapsed .section-toggle { transform: rotate(-90deg); }
+        .section.collapsed .section-body { display: none; }
+
+        /* Subsections */
+        .subsection-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin: 16px 0 8px;
+        }
+
+        /* Items */
+        .item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .item:last-child { border-bottom: none; }
+
+        .item-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .item-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .item-source {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .item-expand {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .item.expanded .item-expand { transform: rotate(90deg); }
+
+        .item-summary {
+            margin-top: 6px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .item-detail {
+            display: none;
+            margin-top: 8px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        .item.expanded .item-detail { display: block; }
+
+        .item-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent);
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        .item-link:hover { text-decoration: underline; }
+
+        /* Footer */
+        .footer {
+            margin: 32px 0 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            body { padding-top: 90px; }
+            .header h1 { font-size: 0.95rem; }
+            .btn { padding: 5px 10px; font-size: 0.8rem; }
+            .section-header h2 { font-size: 1rem; }
+        }
+
+        /* Language toggle visibility */
+        .lang-cn { display: none; }
+        body.show-cn .lang-en { display: none; }
+        body.show-cn .lang-cn { display: block; }
+        body.show-cn .lang-cn.inline { display: inline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-inner">
+            <h1>
+                <span class="lang-en">Daily News Briefing — {{ date }}</span>
+                <span class="lang-cn inline">每日新闻简报 — {{ date }}</span>
+            </h1>
+            <div class="header-controls">
+                <button class="btn" id="lang-toggle" onclick="toggleLang()">
+                    <span class="lang-en">中文</span>
+                    <span class="lang-cn inline">EN</span>
+                </button>
+                <button class="btn btn-refresh" id="refresh-btn" onclick="triggerRefresh()">
+                    ↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% if breaking %}
+    <div class="breaking">
+        <div class="breaking-label">
+            <span class="lang-en">Breaking / Urgent</span>
+            <span class="lang-cn inline">突发 / 紧急</span>
+        </div>
+        {% for item in breaking %}
+        <div class="item">
+            <div class="item-header" onclick="toggleItem(this.parentElement)">
+                <span class="item-title">{{ item.title }}</span>
+                <span class="item-expand">▶</span>
+            </div>
+            <div class="item-summary">
+                <span class="lang-en">{{ item.summary_en }}</span>
+                <span class="lang-cn">{{ item.summary_cn }}</span>
+            </div>
+            <div class="item-detail">
+                <span class="lang-en">{{ item.detail_en }}</span>
+                <span class="lang-cn">{{ item.detail_cn }}</span>
+                <br><a class="item-link" href="{{ item.url }}" target="_blank">
+                    <span class="lang-en">Read full article →</span>
+                    <span class="lang-cn">阅读全文 →</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% for section in sections %}
+    <div class="section" id="section-{{ section.key }}">
+        <div class="section-header" onclick="toggleSection(this.parentElement)">
+            <h2>
+                <span class="lang-en">{{ section.display_name }}</span>
+                <span class="lang-cn inline">{{ section.display_name_cn | default(section.display_name) }}</span>
+            </h2>
+            <span class="section-badge">{{ section.item_count }}</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-body">
+            {% for subsection in section.subsections %}
+            {% if subsection.entries %}
+            <div class="subsection-title">
+                <span class="lang-en">{{ subsection.name }}</span>
+                <span class="lang-cn inline">{{ subsection.name_cn | default(subsection.name) }}</span>
+            </div>
+            {% for item in subsection.entries %}
+            <div class="item">
+                <div class="item-header" onclick="toggleItem(this.parentElement)">
+                    <span class="item-title">{{ item.title }}</span>
+                    <span class="item-source">{{ item.source }}</span>
+                    <span class="item-expand">▶</span>
+                </div>
+                <div class="item-summary">
+                    <span class="lang-en">{{ item.summary_en }}</span>
+                    <span class="lang-cn">{{ item.summary_cn }}</span>
+                </div>
+                <div class="item-detail">
+                    <span class="lang-en">{{ item.detail_en }}</span>
+                    <span class="lang-cn">{{ item.detail_cn }}</span>
+                    <br><a class="item-link" href="{{ item.url }}" target="_blank">
+                        <span class="lang-en">Read full article →</span>
+                        <span class="lang-cn">阅读全文 →</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        <span class="lang-en">Generated {{ generated_at }} UTC • Sources: {{ source_count }} feeds</span>
+        <span class="lang-cn">生成时间 {{ generated_at }} UTC • 来源: {{ source_count }} 个信息源</span>
+    </div>
+
+    <script>
+        // Language toggle
+        function toggleLang() {
+            document.body.classList.toggle('show-cn');
+            localStorage.setItem('lang', document.body.classList.contains('show-cn') ? 'cn' : 'en');
+        }
+
+        // Restore saved language
+        if (localStorage.getItem('lang') === 'cn') {
+            document.body.classList.add('show-cn');
+        }
+
+        // Section collapse/expand
+        function toggleSection(el) {
+            el.classList.toggle('collapsed');
+        }
+
+        // Item expand/collapse
+        function toggleItem(el) {
+            el.classList.toggle('expanded');
+        }
+
+        // Refresh — triggers GitHub Actions workflow_dispatch
+        const GITHUB_REPO = '{{ github_repo }}';
+        const WORKFLOW_FILE = 'daily-briefing.yml';
+
+        async function triggerRefresh() {
+            const btn = document.getElementById('refresh-btn');
+            const token = prompt('Enter GitHub PAT to trigger refresh:');
+            if (!token) return;
+
+            btn.classList.add('loading');
+            btn.textContent = '⏳';
+
+            try {
+                const resp = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                        },
+                        body: JSON.stringify({ ref: 'main' }),
+                    }
+                );
+
+                if (resp.status === 204) {
+                    btn.textContent = '✓';
+                    setTimeout(() => {
+                        btn.innerHTML = '↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>';
+                        btn.classList.remove('loading');
+                        alert('Build triggered! Page will update in ~2-3 minutes. Reload then.');
+                    }, 1500);
+                } else {
+                    throw new Error(`GitHub API returned ${resp.status}`);
+                }
+            } catch (e) {
+                btn.innerHTML = '↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>';
+                btn.classList.remove('loading');
+                alert('Failed to trigger refresh: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
