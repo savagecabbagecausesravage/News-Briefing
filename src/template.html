@@ -100,16 +100,7 @@
         .btn:hover { border-color: var(--accent); color: var(--accent); }
         .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        .btn-refresh {
-            background: var(--accent);
-            color: #fff;
-            border-color: var(--accent);
-        }
-        .btn-refresh:hover { background: var(--accent-hover); }
-        .btn-refresh.loading {
-            opacity: 0.7;
-            cursor: wait;
-        }
+
 
         .date-select {
             padding: 6px 10px;
@@ -299,9 +290,6 @@
                     <span class="lang-en">中文</span>
                     <span class="lang-cn inline">EN</span>
                 </button>
-                <button class="btn btn-refresh" id="refresh-btn" onclick="triggerRefresh()">
-                    ↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>
-                </button>
             </div>
         </div>
     </div>
@@ -396,47 +384,6 @@
             el.classList.toggle('collapsed');
         }
 
-        // Refresh — triggers GitHub Actions workflow_dispatch
-        const GITHUB_REPO = '{{ github_repo }}';
-        const WORKFLOW_FILE = 'daily-briefing.yml';
-
-        async function triggerRefresh() {
-            const btn = document.getElementById('refresh-btn');
-            const token = prompt('Enter GitHub PAT to trigger refresh:');
-            if (!token) return;
-
-            btn.classList.add('loading');
-            btn.textContent = '⏳';
-
-            try {
-                const resp = await fetch(
-                    `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Accept': 'application/vnd.github.v3+json',
-                        },
-                        body: JSON.stringify({ ref: 'main' }),
-                    }
-                );
-
-                if (resp.status === 204) {
-                    btn.textContent = '✓';
-                    setTimeout(() => {
-                        btn.innerHTML = '↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>';
-                        btn.classList.remove('loading');
-                        alert('Build triggered! Page will update in ~2-3 minutes. Reload then.');
-                    }, 1500);
-                } else {
-                    throw new Error(`GitHub API returned ${resp.status}`);
-                }
-            } catch (e) {
-                btn.innerHTML = '↻ <span class="lang-en">Refresh</span><span class="lang-cn inline">刷新</span>';
-                btn.classList.remove('loading');
-                alert('Failed to trigger refresh: ' + e.message);
-            }
-        }
     </script>
 </body>
 </html>
