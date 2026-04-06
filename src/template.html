@@ -344,7 +344,7 @@
             <div class="item">
                 <div class="item-header">
                     <span class="item-title">
-                        {% if item.url %}<a href="{{ item.url }}" target="_blank">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+                        {% if item.url %}<a href="{{ item.url }}" target="_blank"><span class="lang-en">{{ item.title }}</span><span class="lang-cn">{{ item.title_cn | default(item.title) }}</span></a>{% else %}<span class="lang-en">{{ item.title }}</span><span class="lang-cn">{{ item.title_cn | default(item.title) }}</span>{% endif %}
                     </span>
                     <span class="item-source">
                         {% if item.url %}<a href="{{ item.url }}" target="_blank">{{ item.source }} →</a>{% else %}{{ item.source }}{% endif %}

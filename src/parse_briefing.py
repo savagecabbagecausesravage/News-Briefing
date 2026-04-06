@@ -59,19 +59,21 @@ def parse_entry(lines: list[str]) -> dict | None:
     detail_cn = ""
 
     # Try simple EN:/CN: format first
-    en_match = re.search(r"(?:^|\n)EN:\s*(.+?)(?=\nCN:|\n---|\Z)", body, re.DOTALL)
-    cn_match = re.search(r"(?:^|\n)CN:\s*(.+?)(?=\n---|\nEN:|\Z)", body, re.DOTALL)
+    en_match = re.search(r"(?:^|\n)EN:\s*(.+?)(?=\nCN:|\nTitleCN:|\n---|\Z)", body, re.DOTALL)
+    cn_match = re.search(r"(?:^|\n)CN:\s*(.+?)(?=\nTitleCN:|\n---|\nEN:|\Z)", body, re.DOTALL)
+    title_cn_match = re.search(r"(?:^|\n)TitleCN:\s*(.+?)(?=\n---|\nEN:|\nCN:|\Z)", body, re.DOTALL)
 
     if en_match:
         summary_en = en_match.group(1).strip()
         summary_cn = cn_match.group(1).strip() if cn_match else summary_en
-        # detail = summary for this simple format
+        title_cn = title_cn_match.group(1).strip() if title_cn_match else title
         detail_en = summary_en
         detail_cn = summary_cn
         if not title or not summary_en:
             return None
         return {
-            "title": title, "summary_en": summary_en, "summary_cn": summary_cn,
+            "title": title, "title_cn": title_cn,
+            "summary_en": summary_en, "summary_cn": summary_cn,
             "url": url, "source": source, "detail_en": detail_en, "detail_cn": detail_cn,
         }
 
@@ -101,6 +103,7 @@ def parse_entry(lines: list[str]) -> dict | None:
 
     return {
         "title": title,
+        "title_cn": title,
         "summary_en": summary_en,
         "summary_cn": summary_cn or summary_en,
         "url": url,
