@@ -1,4 +1,3 @@
-# News-Briefing
 # Building a Daily News Briefing Agent with Claude Code
 
 A complete guide to building an autonomous daily news briefing agent that fetches, summarizes, translates, and publishes news — using Claude Code scheduled triggers, GitHub Actions, and GitHub Pages. Zero API costs.
