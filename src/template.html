@@ -111,6 +111,18 @@
             cursor: wait;
         }
 
+        .date-select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .date-select:hover { border-color: var(--accent); }
+
         /* Breaking news */
         .breaking {
             margin: 16px 0;
@@ -254,9 +266,10 @@
 
         /* Mobile */
         @media (max-width: 600px) {
-            body { padding-top: 90px; }
+            body { padding-top: 100px; }
             .header h1 { font-size: 0.95rem; }
             .btn { padding: 5px 10px; font-size: 0.8rem; }
+            .date-select { font-size: 0.8rem; padding: 5px 8px; }
             .section-header h2 { font-size: 1rem; }
         }
 
@@ -275,6 +288,13 @@
                 <span class="lang-cn inline">每日新闻简报 — {{ date }}</span>
             </h1>
             <div class="header-controls">
+                {% if available_dates and available_dates|length > 1 %}
+                <select class="date-select" onchange="if(this.value) window.location.href=this.value + '.html'">
+                    {% for d in available_dates %}
+                    <option value="{{ d }}" {{ 'selected' if d == date else '' }}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
                 <button class="btn" id="lang-toggle" onclick="toggleLang()">
                     <span class="lang-en">中文</span>
                     <span class="lang-cn inline">EN</span>

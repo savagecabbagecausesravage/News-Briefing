@@ -87,9 +87,37 @@ def generate(summarized_data: dict, github_repo: str = "") -> str:
     )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Save dated copy for archive
+    dated_path = OUTPUT_DIR / f"{today}.html"
+    dated_path.write_text(html, encoding="utf-8")
+    logger.info(f"Generated {dated_path}")
+
+    # Clean up old archives (keep last 5 days)
+    archive_files = sorted(OUTPUT_DIR.glob("20??-??-??.html"), reverse=True)
+    for old_file in archive_files[5:]:
+        old_file.unlink()
+        logger.info(f"Removed old archive: {old_file.name}")
+
+    # Build available dates list for dropdown
+    available_dates = [f.stem for f in sorted(OUTPUT_DIR.glob("20??-??-??.html"), reverse=True)]
+
+    # Re-render with dates dropdown
+    html = template.render(
+        date=today,
+        breaking=summarized_data.get("breaking", []),
+        sections=sections,
+        generated_at=generated_at,
+        source_count=source_count,
+        github_repo=github_repo or os.environ.get("GITHUB_REPOSITORY", ""),
+        available_dates=available_dates,
+    )
+
+    # Write index.html (current day) and update dated copy
     output_path = OUTPUT_DIR / "index.html"
     output_path.write_text(html, encoding="utf-8")
-    logger.info(f"Generated {output_path} ({len(html)} bytes)")
+    dated_path.write_text(html, encoding="utf-8")
+    logger.info(f"Generated {output_path} ({len(html)} bytes), {len(available_dates)} days archived")
 
     return str(output_path)
 
