@@ -6,6 +6,6 @@ venv/
 *.egg-info/
 dist/
 build/
-data/
+data/summarized.json
 debug/
 src/test_generate.py

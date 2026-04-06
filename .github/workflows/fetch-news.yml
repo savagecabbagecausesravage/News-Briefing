@@ -1,0 +1,42 @@
+name: Fetch News Data
+
+on:
+  schedule:
+    # 23:55 UTC — 5 minutes before the Claude trigger runs at 00:00 UTC
+    - cron: '55 23 * * *'
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch news
+        env:
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+        working-directory: src
+        run: python main.py fetch
+
+      - name: Commit fetched data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/fetched.json
+          git diff --staged --quiet || git commit -m "Fetch news data $(date -u +%Y-%m-%d)"
+          git push
